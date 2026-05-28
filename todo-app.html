@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Todo App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --border-hover: rgba(0,0,0,0.2);
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-tertiary: #a0a09c;
+    --accent: #2d6a4f;
+    --accent-light: #e8f5ee;
+    --accent-border: #95d5b2;
+    --danger: #c0392b;
+    --danger-light: #fdf0ee;
+    --danger-border: #e8b4ae;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 3rem 1rem 4rem;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 2rem;
+  }
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+  }
+  .header-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
+  }
+  .header-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  /* Add row */
+  .add-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+  .add-row input {
+    flex: 1;
+    height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .add-row input::placeholder { color: var(--text-tertiary); }
+  .add-row input:focus {
+    outline: none;
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
+  }
+  .add-btn {
+    height: 44px;
+    padding: 0 18px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: var(--shadow);
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .add-btn:hover { opacity: 0.88; }
+  .add-btn:active { transform: scale(0.97); }
+  .add-btn svg { width: 16px; height: 16px; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 1rem;
+  }
+  .filter-btn {
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .filter-btn:hover { background: var(--surface); color: var(--text-primary); border-color: var(--border); }
+  .filter-btn.active {
+    background: var(--surface);
+    color: var(--text-primary);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+  .count-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
+  }
+
+  /* Task list */
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .task-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s, box-shadow 0.15s, opacity 0.2s;
+    animation: slide-in 0.18s ease;
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .task-card:hover { border-color: var(--border-hover); box-shadow: var(--shadow-md); }
+  .task-card.done { opacity: 0.55; }
+
+  /* Checkbox */
+  .check-btn {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-hover);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    padding: 0;
+  }
+  .check-btn:hover { border-color: var(--accent); }
+  .check-btn.checked { background: var(--accent); border-color: var(--accent); }
+  .check-btn svg { width: 12px; height: 12px; stroke: #fff; display: none; }
+  .check-btn.checked svg { display: block; }
+
+  /* Task text */
+  .task-text {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .task-card.done .task-text {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+  }
+  .edit-input {
+    flex: 1;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0;
+  }
+
+  /* Action buttons */
+  .action-btns {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .task-card:hover .action-btns { opacity: 1; }
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    padding: 0;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .icon-btn:hover { background: var(--bg); border-color: var(--border-hover); color: var(--text-primary); }
+  .icon-btn.del:hover {
+    background: var(--danger-light);
+    border-color: var(--danger-border);
+    color: var(--danger);
+  }
+  .icon-btn.save:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 3.5rem 0;
+    color: var(--text-tertiary);
+  }
+  .empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .empty p { font-size: 14px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--text-primary);
+    color: #fff;
+    border-radius: var(--radius-md);
+    padding: 9px 18px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <h1>My tasks</h1>
+      <span class="header-date" id="header-date"></span>
+    </div>
+    <p class="header-sub">Stay on top of your day</p>
+  </div>
+
+  <div class="add-row">
+    <input type="text" id="task-input" placeholder="Add a new task…" maxlength="200" aria-label="New task" />
+    <button class="add-btn" id="add-btn" aria-label="Add task">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="active">Active</button>
+    <button class="filter-btn" data-filter="completed">Completed</button>
+    <span class="count-badge" id="count-badge"></span>
+  </div>
+
+  <div class="task-list" id="task-list" role="list"></div>
+
+  <div class="empty" id="empty-state" style="display:none" aria-live="polite">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+    </svg>
+    <p id="empty-msg">No tasks yet — add one above!</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  /* ── State ──────────────────────────────────────────── */
+  const STORAGE_KEY = 'todo_app_v1';
+  let tasks = [];
+  let filter = 'all';
+  let editingId = null;
+
+  /* ── Persistence ────────────────────────────────────── */
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      tasks = raw ? JSON.parse(raw) : [];
+    } catch (e) { tasks = []; }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); } catch (e) {}
+  }
+
+  /* ── Helpers ────────────────────────────────────────── */
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  /* ── CRUD ───────────────────────────────────────────── */
+  function addTask(text) {
+    text = text.trim();
+    if (!text) { showToast('Task text cannot be empty.'); return false; }
+    const dup = tasks.find(t => t.text.toLowerCase() === text.toLowerCase());
+    if (dup) { showToast('A similar task already exists.'); return false; }
+    tasks.unshift({ id: uid(), text, done: false, created: Date.now() });
+    save(); render(); return true;
+  }
+
+  function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    if (editingId === id) editingId = null;
+    save(); render();
+  }
+
+  function toggleTask(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) { t.done = !t.done; save(); render(); }
+  }
+
+  function startEdit(id) {
+    editingId = id;
+    render();
+    const inp = document.getElementById('edit-' + id);
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
+
+  function saveEdit(id) {
+    const inp = document.getElementById('edit-' + id);
+    if (!inp) return;
+    const text = inp.value.trim();
+    if (!text) { showToast('Task text cannot be empty.'); inp.focus(); return; }
+    const dup = tasks.find(t => t.text.toLowerCase() === text.toLowerCase() && t.id !== id);
+    if (dup) { showToast('A similar task already exists.'); inp.focus(); return; }
+    const t = tasks.find(t => t.id === id);
+    if (t) t.text = text;
+    editingId = null;
+    save(); render();
+  }
+
+  function cancelEdit() { editingId = null; render(); }
+
+  /* ── Icons (inline SVG strings) ─────────────────────── */
+  const ICON = {
+    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    edit:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+    trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`,
+    save:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`,
+    close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  };
+
+  /* ── Render ─────────────────────────────────────────── */
+  function visibleTasks() {
+    if (filter === 'active')    return tasks.filter(t => !t.done);
+    if (filter === 'completed') return tasks.filter(t =>  t.done);
+    return tasks;
+  }
+
+  function render() {
+    const active = tasks.filter(t => !t.done).length;
+    document.getElementById('count-badge').textContent =
+      active === 1 ? '1 remaining' : active + ' remaining';
+
+    const list    = document.getElementById('task-list');
+    const empty   = document.getElementById('empty-state');
+    const emptyMsg= document.getElementById('empty-msg');
+    const visible = visibleTasks();
+
+    if (visible.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = '';
+      emptyMsg.textContent =
+        filter === 'active'    ? 'No active tasks — nice work!' :
+        filter === 'completed' ? 'No completed tasks yet.' :
+                                 'No tasks yet — add one above!';
+    } else {
+      empty.style.display = 'none';
+      list.innerHTML = visible.map(t => {
+        const isEditing = editingId === t.id;
+        return `
+        <div class="task-card${t.done ? ' done' : ''}" role="listitem" data-id="${t.id}">
+          <button class="check-btn${t.done ? ' checked' : ''}"
+            onclick="toggleTask('${t.id}')"
+            aria-label="${t.done ? 'Mark incomplete' : 'Mark complete'}">
+            ${ICON.check}
+          </button>
+          ${isEditing
+            ? `<input class="edit-input" id="edit-${t.id}"
+                value="${esc(t.text)}"
+                aria-label="Edit task"
+                onkeydown="if(event.key==='Enter')saveEdit('${t.id}');else if(event.key==='Escape')cancelEdit();"
+                onblur="saveEdit('${t.id}')" />`
+            : `<span class="task-text">${esc(t.text)}</span>`
+          }
+          <div class="action-btns">
+            ${isEditing ? `
+              <button class="icon-btn save" onclick="saveEdit('${t.id}')" aria-label="Save">${ICON.save}</button>
+              <button class="icon-btn" onclick="cancelEdit()" aria-label="Cancel">${ICON.close}</button>
+            ` : `
+              <button class="icon-btn" onclick="startEdit('${t.id}')" aria-label="Edit">${ICON.edit}</button>
+              <button class="icon-btn del" onclick="deleteTask('${t.id}')" aria-label="Delete">${ICON.trash}</button>
+            `}
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  /* ── Event listeners ────────────────────────────────── */
+  document.getElementById('add-btn').addEventListener('click', () => {
+    const inp = document.getElementById('task-input');
+    if (addTask(inp.value)) inp.value = '';
+  });
+
+  document.getElementById('task-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const inp = document.getElementById('task-input');
+      if (addTask(inp.value)) inp.value = '';
+    }
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+
+  /* ── Date label ─────────────────────────────────────── */
+  const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now    = new Date();
+  document.getElementById('header-date').textContent =
+    DAYS[now.getDay()] + ' · ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
+
+  /* ── Boot ───────────────────────────────────────────── */
+  load();
+  render();
+</script>
+</body>
+</html>
