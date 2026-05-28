@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Infinite Scroll – One Member Loop</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      padding: 24px 16px;
+    }
+
+    h2 { text-align: center; margin-bottom: 24px; color: #222; }
+
+    #feed {
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Real card ── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .card-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .card-name  { font-weight: 600; color: #111; margin-bottom: 4px; }
+    .card-text  { font-size: 14px; color: #555; line-height: 1.5; }
+    .card-index { font-size: 11px; color: #aaa; margin-top: 6px; }
+
+    /* ── Skeleton card ── */
+    .skeleton-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .skel {
+      background: #e0e0e0;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .skel::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+      animation: shimmer 1.4s infinite;
+    }
+
+    .skel-avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; }
+    .skel-body   { flex: 1; }
+    .skel-line   { height: 12px; margin-bottom: 10px; }
+    .skel-line.short  { width: 40%; }
+    .skel-line.full   { width: 100%; }
+    .skel-line.medium { width: 70%; }
+    .skel-line.last   { width: 55%; margin-bottom: 0; }
+
+    #loader { text-align: center; padding: 24px; color: #888; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <h2>👤 My Feed</h2>
+  <div id="feed"></div>
+  <div id="loader">Loading…</div>
+
+  <script>
+    // ─────────────────────────────────────────
+    // ONE member — repeated forever
+    // ─────────────────────────────────────────
+    const MEMBER = {
+      name:   'My Feed',
+      avatar: 'https://ui-avatars.com/api/?name=My+Feed&background=4f46e5&color=fff&size=48',
+      posts: [
+        'Just shipped a new feature — infinite scroll with skeleton loaders!',
+        'CSS animations are underrated. Shimmer effects are pure magic.',
+        'JavaScript IntersectionObserver makes lazy loading so clean.',
+        'Building UIs that feel fast is just as important as making them fast.',
+        'Simple code > clever code. Always write for the next developer.',
+      ],
+    };
+
+    const POSTS_PER_BATCH = 5;
+    let   postCount       = 0;    // total posts shown so far
+    let   isLoading       = false;
+
+    // ─────────────────────────────────────────
+    // Pick Alice's next post (loops forever)
+    // ─────────────────────────────────────────
+    function nextPost() {
+      postCount++;
+      return {
+        number: postCount,                                      // post #
+        text:   MEMBER.posts[(postCount - 1) % MEMBER.posts.length], // cycle through her posts
+      };
+    }
+
+    // ─────────────────────────────────────────
+    // Skeleton HTML
+    // ─────────────────────────────────────────
+    function skeletonCard() {
+      return `
+        <div class="skeleton-card">
+          <div class="skel skel-avatar"></div>
+          <div class="skel-body">
+            <div class="skel skel-line short"></div>
+            <div class="skel skel-line full"></div>
+            <div class="skel skel-line medium"></div>
+            <div class="skel skel-line last"></div>
+          </div>
+        </div>`;
+    }
+
+    // ─────────────────────────────────────────
+    // Real card HTML
+    // ─────────────────────────────────────────
+    function realCard(post) {
+      return `
+        <div class="card">
+          <img class="card-avatar" src="${MEMBER.avatar}" alt="${MEMBER.name}" />
+          <div class="card-body">
+            <div class="card-name">${MEMBER.name}</div>
+            <div class="card-text">${post.text}</div>
+            <div class="card-index">Post #${post.number}</div>
+          </div>
+        </div>`;
+    }
+
+    // ─────────────────────────────────────────
+    // Load next batch — runs forever (infinite loop)
+    // ─────────────────────────────────────────
+    function loadMore() {
+      if (isLoading) return;
+      isLoading = true;
+
+      const feed  = document.getElementById('feed');
+
+      // Step 1 — show skeletons
+      const skeletons = Array.from({ length: POSTS_PER_BATCH }, skeletonCard).join('');
+      feed.insertAdjacentHTML('beforeend', skeletons);
+
+      // Step 2 — after delay, replace skeletons with real cards
+      setTimeout(() => {
+        feed.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+
+        // Generate next batch of posts from Alice (loops forever)
+        const posts = Array.from({ length: POSTS_PER_BATCH }, nextPost);
+        feed.insertAdjacentHTML('beforeend', posts.map(realCard).join(''));
+
+        isLoading = false;
+        // ↑ No "stop" condition — this runs forever
+      }, 1200);
+    }
+
+    // ─────────────────────────────────────────
+    // Watch the #loader div — trigger loadMore
+    // whenever it scrolls into view
+    // ─────────────────────────────────────────
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) loadMore();
+    }, { threshold: 1.0 });
+
+    observer.observe(document.getElementById('loader'));
+  </script>
+
+</body>
+</html>
